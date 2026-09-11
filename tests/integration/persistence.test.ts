@@ -106,7 +106,7 @@ describe("SQLite persistence and migrations", () => {
 
       expect(template).toEqual({ name: "原有训练模板", notes: "升级后不能丢失", body_part: "" });
       expect(workoutColumns.map((column) => column.name)).toContain("body_part");
-      expect(versions.at(-1)?.version).toBe("002_workout_body_part.sql");
+      expect(versions.at(-1)?.version).toBe("003_learning.sql");
     } finally {
       upgradedManager.close();
     }

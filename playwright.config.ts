@@ -12,7 +12,7 @@ export default defineConfig({
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: "http://127.0.0.1:3000",
-    launchOptions: { executablePath: chromium.executablePath() },
+    launchOptions: { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH ?? chromium.executablePath() },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },

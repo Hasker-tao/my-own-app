@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">hasker 工作台图标</title>
+  <rect x="3" y="3" width="58" height="58" rx="8" fill="#f8f5ec" stroke="#242723" stroke-width="5"/>
+  <path d="M19 14h8v17c3-4 7-6 11-6 8 0 12 5 12 14v12h-8V39c0-5-2-7-6-7-5 0-9 4-9 10v9h-8Z" fill="#242723"/>
+  <path d="M8 8h10v6H8Z" fill="#ce573d"/>
+</svg>

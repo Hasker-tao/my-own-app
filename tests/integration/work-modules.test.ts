@@ -25,7 +25,7 @@ describe("specialized work modules", () => {
   });
 
   it("keeps development projects, milestones, typed work items and logs as distinct records", async () => {
-    const project = await create("devProjects", { name: "木子工作台", description: "个人本地管理 App", status: "active", local_path: "/tmp/muzi" });
+    const project = await create("devProjects", { name: "hasker工作台", description: "个人本地管理 App", status: "active", local_path: "/tmp/muzi" });
     const milestone = await create("devMilestones", { project_id: project.id, name: "第一版", target_date: "2026-09-01", status: "open" });
     const bug = await create("devWorkItems", { project_id: project.id, milestone_id: milestone.id, title: "修复备份恢复边界", item_type: "bug", priority: "high", status: "todo", description: "损坏文件不得覆盖当前数据" });
     await create("devLogs", { project_id: project.id, log_date: "2026-08-02", content: "完成数据库迁移和备份切片。" });

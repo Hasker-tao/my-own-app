@@ -1,3 +1,4 @@
+import { learningState } from "./learning.js";
 import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
@@ -126,7 +127,7 @@ export class BackupManager {
 
   async exportAll(): Promise<{ filename: string; path: string; size: number }> {
     const zip = new JSZip();
-    const state = this.store.state();
+    const state = { ...this.store.state(), learning: learningState(this.manager) };
     const manifest = {
       exportedAt: new Date().toISOString(),
       app: "MuziWorkspace",

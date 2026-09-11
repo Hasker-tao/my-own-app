@@ -7,7 +7,7 @@ let shuttingDown = false;
 async function shutdown(signal: string) {
   if (shuttingDown) return;
   shuttingDown = true;
-  app.log.info({ signal }, "正在安全关闭木子工作台");
+  app.log.info({ signal }, "正在安全关闭hasker工作台");
   try {
     await app.close();
   } finally {

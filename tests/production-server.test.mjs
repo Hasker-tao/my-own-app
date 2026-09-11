@@ -52,7 +52,7 @@ test("production server serves the built app and API on loopback", async (contex
   assert.equal(missingAsset.status, 404);
   assert.doesNotMatch(await missingAsset.text(), /<html/i);
   const clientRoute = await fetch(`${baseUrl}/today`).then((response) => response.text());
-  assert.match(clientRoute, /<title>木子工作台<\/title>/);
+  assert.match(clientRoute, /<title>hasker工作台<\/title>/);
 });
 
 test("desktop launcher reuses one server and the page exit endpoint saves before stopping it", async () => {
@@ -181,15 +181,15 @@ test("desktop launcher replaces a stale build before opening the page", async ()
 });
 
 test("ships one user-facing launcher per desktop OS and no stop script", () => {
-  const macLauncher = path.join(projectRoot, "启动木子工作台.command");
-  const windowsLauncher = path.join(projectRoot, "启动木子工作台.bat");
+  const macLauncher = path.join(projectRoot, "启动hasker工作台.command");
+  const windowsLauncher = path.join(projectRoot, "启动hasker工作台.bat");
   assert.equal(fs.existsSync(macLauncher), true);
   assert.equal(fs.existsSync(windowsLauncher), true);
   assert.match(fs.readFileSync(macLauncher, "utf8"), /npm run app:start/);
   assert.match(fs.readFileSync(macLauncher, "utf8"), /cd -- "\$\{0:A:h\}"/);
   assert.match(fs.readFileSync(windowsLauncher, "utf8"), /call npm run app:start/);
   assert.match(fs.readFileSync(windowsLauncher, "utf8"), /cd \/d "%~dp0"/);
-  assert.equal(fs.existsSync(path.join(projectRoot, "停止木子工作台.command")), false);
+  assert.equal(fs.existsSync(path.join(projectRoot, "停止hasker工作台.command")), false);
   assert.equal(fs.existsSync(path.join(projectRoot, "scripts", "stop-app.mjs")), false);
 });
 

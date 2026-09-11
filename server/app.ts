@@ -1,3 +1,4 @@
+import { registerLearning } from "./learning.js";
 import Fastify, { type FastifyInstance } from "fastify";
 import fastifyStatic from "@fastify/static";
 import fs from "node:fs";
@@ -39,8 +40,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
 
   app.setErrorHandler((error, _request, reply) => {
     const appError = error as Error & { statusCode?: number };
-    const statusCode = error instanceof ValidationError || error instanceof NotFoundError
-      ? error.statusCode
+    const statusCode = error instanceof z.ZodError || error instanceof ValidationError || error instanceof NotFoundError
+      ? error instanceof z.ZodError ? 400 : error.statusCode
       : appError.statusCode && Number(appError.statusCode) < 500
         ? Number(appError.statusCode)
         : 500;
@@ -59,6 +60,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       now: new Date().toISOString(),
     },
   }));
+
+  registerLearning(app, manager);
 
   app.get("/api/state", async () => ({ data: store.state() }));
 
@@ -246,7 +249,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       // 缺失的构建资源必须返回 404。若退回 index.html，浏览器会把 HTML
       // 当作 JavaScript/CSS 加载并得到一片白屏。
       if (request.url.startsWith("/assets/")) {
-        return reply.code(404).send({ error: { code: "ASSET_NOT_FOUND", message: "页面资源不存在，请重新启动木子工作台" } });
+        return reply.code(404).send({ error: { code: "ASSET_NOT_FOUND", message: "页面资源不存在，请重新启动hasker工作台" } });
       }
       return reply.header("Cache-Control", "no-cache").sendFile("index.html");
     });

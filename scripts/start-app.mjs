@@ -20,14 +20,14 @@ fs.mkdirSync(logsDir, { recursive: true });
 
 if (canReuse(await healthStatus())) {
   maybeOpenBrowser();
-  console.log(`木子工作台已经在运行：${baseUrl}`);
+  console.log(`hasker工作台已经在运行：${baseUrl}`);
   process.exit(0);
 }
 
 const launchLock = await acquireLaunchLock();
 if (launchLock === null) {
   maybeOpenBrowser();
-  console.log(`木子工作台已经在运行：${baseUrl}`);
+  console.log(`hasker工作台已经在运行：${baseUrl}`);
   process.exit(0);
 }
 const releaseLaunchLock = () => {
@@ -40,7 +40,7 @@ process.once("exit", releaseLaunchLock);
 const existingStatus = await healthStatus();
 if (canReuse(existingStatus)) {
   maybeOpenBrowser();
-  console.log(`木子工作台已经在运行：${baseUrl}`);
+  console.log(`hasker工作台已经在运行：${baseUrl}`);
   process.exit(0);
 }
 
@@ -86,7 +86,7 @@ for (let attempt = 0; attempt < 80; attempt += 1) {
   const status = await healthStatus();
   if (status?.application === "muzi-workspace" && status.buildId === buildId && status.instanceId === instanceId) {
     maybeOpenBrowser();
-    console.log(`木子工作台已启动：${baseUrl}`);
+    console.log(`hasker工作台已启动：${baseUrl}`);
     console.log(`数据目录：${dataRoot}`);
     process.exit(0);
   }
@@ -141,7 +141,7 @@ async function stopStaleService(status) {
     );
 
   if (!recordedProcessMatches) {
-    console.error(`端口 ${port} 上存在无法确认身份的服务。为保护其他程序，木子工作台没有结束该进程。`);
+    console.error(`端口 ${port} 上存在无法确认身份的服务。为保护其他程序，hasker工作台没有结束该进程。`);
     process.exit(1);
   }
 
@@ -252,7 +252,7 @@ async function acquireLaunchLock() {
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
   }
-  console.error("另一个木子工作台启动过程仍在进行，请稍后再试。");
+  console.error("另一个hasker工作台启动过程仍在进行，请稍后再试。");
   process.exit(1);
 }
 

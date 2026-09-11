@@ -1,3 +1,4 @@
+import { LearningSummary } from "../components/LearningSummary";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -11,7 +12,6 @@ import { ModuleArtwork, type ModuleArtworkName } from "../components/ModuleArtwo
 const summaryMeta: Record<string, { title: string; route: string; module: ModuleArtworkName; empty: string }> = {
   media: { title: "自媒体", route: "/media", module: "media", empty: "暂无待发布内容" },
   development: { title: "开发工作", route: "/development", module: "development", empty: "暂无高优先级问题" },
-  consulting: { title: "咨询工作", route: "/consulting", module: "consulting", empty: "暂无待跟进事项" },
   fitness: { title: "健身计划", route: "/fitness", module: "fitness", empty: "暂无近期训练" },
   diet: { title: "饮食计划", route: "/diet", module: "diet", empty: "今天还没有餐食记录" },
   entertainment: { title: "游戏娱乐", route: "/entertainment", module: "entertainment", empty: "暂无正在进行的游戏" },
@@ -63,6 +63,7 @@ export function DashboardPage() {
   return (
     <div className="dashboard-page">
       <PageHeader icon={<ModuleArtwork module="dashboard" />} eyebrow={new Intl.DateTimeFormat("zh-CN", { weekday: "long" }).format(new Date())} title={`${new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric" }).format(new Date())}，从重点开始`} description="今天的行动、提醒和工作生活状态都在这里。" actions={<Button onClick={() => navigate("/today?new=1")}><Plus size={17} />添加今日事项</Button>} />
+      <LearningSummary />
       <div className="overview-strip">
         <div><span>今日进度</span><strong>{value.overview.progress}<small>%</small></strong></div>
         <div className="progress-track"><span style={{ width: `${value.overview.progress}%` }} /></div>
@@ -92,7 +93,7 @@ export function DashboardPage() {
             {memoId ? <div className="memo-actions"><Button size="sm" variant="ghost" onClick={async () => { await run(() => api.convertMemo(memoId, "planItems", { plan_date: date })); setMemo(""); setSavedMemo(""); setMemoId(null); }}>转为今日事项</Button><Button size="sm" variant="ghost" onClick={async () => { await run(() => api.convertMemo(memoId, "mediaContents", { stage: "idea" })); setMemo(""); setSavedMemo(""); setMemoId(null); }}>转为内容灵感</Button></div> : null}
           </Section>
           <Section title="需要关注" description="到期、跟进与今日提醒">
-            {value.attention.length ? <div className="attention-list">{value.attention.map((item) => <button key={`${item.attention_type}-${item.id}`} onClick={() => navigate(item.module === "today" ? "/today" : `/${item.module}`)}><span className="attention-mark" /><div><strong>{item.display_title || item.title || item.name || item.content}</strong><small>{item.due_date ? `截止 ${formatDate(item.due_date)}` : item.followup_at ? `跟进 ${formatDate(item.followup_at)}` : "需要处理"}</small></div><ArrowRight size={16} /></button>)}</div> : <p className="quiet-line">目前没有紧急事项。</p>}
+            {value.attention.some(item => item.module !== "consulting") ? <div className="attention-list">{value.attention.filter(item => item.module !== "consulting").map((item) => <button key={`${item.attention_type}-${item.id}`} onClick={() => navigate(item.module === "today" ? "/today" : `/${item.module}`)}><span className="attention-mark" /><div><strong>{item.display_title || item.title || item.name || item.content}</strong><small>{item.due_date ? `截止 ${formatDate(item.due_date)}` : item.followup_at ? `跟进 ${formatDate(item.followup_at)}` : "需要处理"}</small></div><ArrowRight size={16} /></button>)}</div> : <p className="quiet-line">目前没有紧急事项。</p>}
           </Section>
         </aside>
       </div>

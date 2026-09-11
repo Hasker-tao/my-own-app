@@ -1,3 +1,4 @@
+import { LearningSummary } from "../components/LearningSummary";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { CalendarPlus, Check, Clock, DotsThree, ArrowBendDownRight, Trash, Play, X, ArrowSquareOut } from "@phosphor-icons/react";
@@ -8,7 +9,7 @@ import { Badge, Button, EmptyState, EntityForm, Modal, PageHeader, Section, type
 import { ModuleArtwork } from "../components/ModuleArtwork";
 
 const fields: FieldDefinition[] = [
-  { name: "title", label: "事项名称", required: true, placeholder: "例如：完成咨询方案" },
+  { name: "title", label: "事项名称", required: true, placeholder: "例如：完成本周课程习题" },
   { name: "plan_date", label: "日期", type: "date", required: true },
   { name: "start_time", label: "开始时间", type: "time" },
   { name: "estimated_minutes", label: "预计分钟", type: "number", placeholder: "60" },
@@ -60,6 +61,7 @@ export function TodayPage() {
   return (
     <div>
       <PageHeader icon={<ModuleArtwork module="today" />} eyebrow="日常执行" title="今日计划" description="只安排今天何时执行什么，业务详情仍留在对应模块。" actions={<Button onClick={() => openForm()}><CalendarPlus size={18} />添加事项</Button>} />
+      <LearningSummary />
       <div className="plan-toolbar">
         <div className="segmented" role="tablist">{(["today", "week", "history"] as const).map((key) => <button key={key} className={view === key ? "active" : ""} onClick={() => setView(key)}>{key === "today" ? "今日" : key === "week" ? "本周" : "历史"}</button>)}</div>
         <label className="date-control"><span>起始日期</span><input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} /></label>

@@ -1,0 +1,52 @@
+import { test, expect } from "@playwright/test";
+import Database from "better-sqlite3";
+import path from "node:path";
+import { emptyLearning } from "../../src/features/learning";
+
+test("records partial work and optional assessment, edits it, persists on reload and excludes previews from coverage",async({page,request},info)=>{
+  const state=structuredClone(emptyLearning);
+  state.courses=[{id:"987654",title:"测试课程 · 电路与系统（合成验收数据）",url:"https://moodle.nottingham.ac.uk/course/view.php?id=987654",selected:true,syncedAt:new Date().toISOString(),topics:[{id:"section-1",title:"Lecture 1 · 线性电路",included:true,taught:false,resources:[{id:"folder:1",title:"Lecture slides",kind:"folder",url:"https://moodle.nottingham.ac.uk/mod/folder/view.php?id=1"}]},{id:"section-2",title:"Lecture 2 · 信号分析",included:false,taught:false,resources:[]}]}];
+  const db=new Database(path.resolve('.test-data/e2e/data/app.sqlite'));
+  db.prepare("INSERT INTO learning_workspace(id,payload) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload").run(JSON.stringify(state));db.close();
+  await request.put("/api/settings",{data:{appearance:"liquid",theme:"light"}});
+  await page.goto('/learning');
+  const topic=page.locator('.learning-topic').filter({hasText:'Lecture 1'});
+  await topic.getByRole('button',{name:'记录学习'}).click();
+  let dialog=page.getByRole('dialog');
+  await expect(dialog.getByLabel('本次动作')).toHaveValue('preview');
+  await dialog.getByLabel('本次完成情况').selectOption('complete');
+  await dialog.getByLabel('实际分钟').fill('15');
+  await dialog.getByRole('button',{name:'保存记录'}).click();
+  await expect(dialog).toBeHidden();
+  await expect(topic.getByText('已预习',{exact:true})).toBeVisible();
+  await topic.getByLabel('已授课').check();
+  await expect(page.locator('.learning-stats')).toContainText('0/1');
+  await topic.getByRole('button',{name:'记录学习'}).click();dialog=page.getByRole('dialog');
+  await dialog.getByLabel('学到哪里').fill('第 12 页');
+  await dialog.getByLabel('实际分钟').fill('20');
+  await dialog.getByRole('button',{name:'保存记录'}).click();await expect(dialog).toBeHidden();
+  await expect(page.locator('.learning-stats')).toContainText('0/1');
+  await page.getByRole('tab',{name:'学习记录'}).click();
+  const history=page.locator('.learning-task').filter({hasText:'第 12 页'});
+  await history.getByRole('button',{name:'修改记录'}).click();dialog=page.getByRole('dialog');
+  await dialog.getByLabel('本次完成情况').selectOption('complete');
+  await dialog.getByRole('button',{name:'保存记录'}).click();await expect(dialog).toBeHidden();
+  const saved=(await (await request.get('/api/learning')).json()).data;
+  expect(saved.records).toHaveLength(2);
+  expect(saved.records.every((r:{understanding:string})=>r.understanding==='unknown')).toBe(true);
+  await page.reload();await expect(page.locator('.learning-stats')).toContainText('1/1');
+  for(const appearance of ['liquid','notebook','neo']){
+    await page.setViewportSize({width:1440,height:1000});
+    await request.put('/api/settings',{data:{appearance}});await page.reload();
+    await expect(topic).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("data-appearance", appearance);
+    await expect(page.locator(".learning-stats")).toContainText("1/1");
+    await page.screenshot({path:info.outputPath(`learning-${appearance}.png`),fullPage:true,animations:"disabled"});
+    await page.setViewportSize({width:390,height:844});
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    await page.screenshot({path:info.outputPath(`learning-${appearance}-mobile.png`),fullPage:true,animations:"disabled"});
+  }
+  await page.setViewportSize({width:1440,height:1000});
+  await page.getByRole('tab',{name:'今天复习'}).click();await expect(page.getByText('实际复习 / 做题')).toBeVisible();
+  await page.goto('/');await expect(page.getByText(/已授课中已复习 1\/1/)).toBeVisible();
+});

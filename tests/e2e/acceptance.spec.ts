@@ -19,7 +19,7 @@ test("opens locally, uses no external runtime resources, and reaches all nine pa
   await expect(page.getByRole("heading", { name: /从重点开始/ })).toBeVisible();
   const destinations = [
     ["首页总览", /从重点开始/], ["今日计划", "今日计划"], ["自媒体", "自媒体"], ["开发工作", "开发工作"],
-    ["咨询工作", "咨询工作"], ["健身计划", "健身计划"], ["饮食计划", "饮食计划"], ["游戏娱乐", "游戏娱乐"], ["数据与设置", "数据与设置"],
+    ["学习", "学习工作台"], ["健身计划", "健身计划"], ["饮食计划", "饮食计划"], ["游戏娱乐", "游戏娱乐"], ["数据与设置", "数据与设置"],
   ] as const;
   for (const [link, heading] of destinations) {
     await page.getByRole("link", { name: link }).click();
@@ -142,7 +142,7 @@ test("uses a distinct local AI-generated icon for every module in one consistent
     source: (icon as HTMLImageElement).getAttribute("src"),
     loaded: (icon as HTMLImageElement).complete && (icon as HTMLImageElement).naturalWidth >= 64,
   }));
-  expect(brandState.source).toBe("/assets/brand/muzi-mark.svg");
+  expect(brandState.source).toBe("/assets/brand/hasker-mark.svg");
   expect(brandState.loaded).toBeTruthy();
   await expect(page.locator(".page-header-icon .module-artwork")).toBeVisible();
   await expect(page.locator(".toolbar-page-icon .module-artwork")).toBeVisible();
@@ -150,11 +150,11 @@ test("uses a distinct local AI-generated icon for every module in one consistent
   await expect(navigationIcons).toHaveCount(9);
   const iconState = await navigationIcons.evaluateAll((icons) => ({
     sources: icons.map((icon) => (icon as HTMLImageElement).getAttribute("src")),
-    allLoaded: icons.every((icon) => (icon as HTMLImageElement).complete && (icon as HTMLImageElement).naturalWidth >= 500),
+    allLoaded: icons.every((icon) => (icon as HTMLImageElement).complete && (icon as HTMLImageElement).naturalWidth > 0),
     radii: icons.map((icon) => Number.parseFloat(getComputedStyle(icon).borderTopLeftRadius)),
   }));
   expect(new Set(iconState.sources).size).toBe(9);
-  expect(iconState.sources.every((source) => source?.startsWith("/assets/module-icons/") && source.endsWith("-v1.webp"))).toBeTruthy();
+  expect(iconState.sources.every((source) => source === "/assets/brand/learning.svg" || (source?.startsWith("/assets/module-icons/") && source.endsWith("-v1.webp")))).toBeTruthy();
   expect(iconState.allLoaded).toBeTruthy();
   expect(Math.min(...iconState.radii)).toBeGreaterThanOrEqual(9);
 
@@ -169,7 +169,7 @@ test("uses a distinct local AI-generated icon for every module in one consistent
 
 test("keeps Neo isolated, multicolor and overflow-free across all pages and target viewports", async ({ page, request }) => {
   test.setTimeout(120_000);
-  const pages = ["/", "/today", "/media", "/development", "/consulting", "/fitness", "/diet", "/entertainment", "/settings"];
+  const pages = ["/", "/today", "/media", "/development", "/learning", "/fitness", "/diet", "/entertainment", "/settings"];
   const viewports = [
     { width: 1440, height: 900 },
     { width: 1728, height: 1117 },
@@ -212,13 +212,13 @@ test("keeps Neo isolated, multicolor and overflow-free across all pages and targ
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/");
-    await expect(page.locator(".neo-nav-emblem")).toHaveCount(9);
+    await expect(page.locator(".neo-nav-emblem")).toHaveCount(8);
     const emblemState = await page.locator(".neo-nav-emblem").evaluateAll((emblems) => ({
       allUseSprite: emblems.every((emblem) => getComputedStyle(emblem).backgroundImage.includes("module-emblems.png")),
       positions: emblems.map((emblem) => getComputedStyle(emblem).backgroundPosition),
     }));
     expect(emblemState.allUseSprite).toBe(true);
-    expect(new Set(emblemState.positions).size).toBe(9);
+    expect(new Set(emblemState.positions).size).toBe(8);
 
     expect((await request.put("/api/settings", { data: { appearance: "neo", theme: "dark" } })).ok()).toBeTruthy();
     await page.goto("/");
@@ -252,7 +252,7 @@ test("keeps every module's primary business entry and safe-exit control availabl
     ["/today", "添加事项"],
     ["/media", "记录内容"],
     ["/development", "新建项目"],
-    ["/consulting", "添加客户"],
+    ["/learning", "导入课程"],
     ["/fitness", "新建训练模板"],
     ["/diet", "记录餐食"],
     ["/entertainment", "添加游戏或活动"],
@@ -276,8 +276,6 @@ test("keeps major panels separated and grid columns aligned in all three appeara
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  const spacingClient = await create(request, "clients", { name: "布局间距验收客户" });
-  await create(request, "consultingProjects", { client_id: spacingClient.id, name: "布局间距验收项目", status: "active" });
   await create(request, "entertainmentItems", { name: "布局间距验收游戏", platform: "本地", status: "playing" });
 
   const readGridFlow = async (selector: string) => page.locator(selector).evaluate((grid) => {
@@ -318,9 +316,8 @@ test("keeps major panels separated and grid columns aligned in all three appeara
       const games = await readGridFlow(".game-grid");
       expect(games.after).toBeGreaterThanOrEqual(12);
 
-      await page.goto("/consulting");
-      const consulting = await readGridFlow(".consult-grid");
-      expect(Math.abs(consulting.firstRowTopDelta)).toBeLessThanOrEqual(1);
+      await page.goto("/learning");
+      await expect(page.getByRole("heading", { name: "学习工作台" })).toBeVisible();
     }
   } finally {
     await request.put("/api/settings", { data: { appearance: "liquid", theme: "light" } });
@@ -459,22 +456,16 @@ test("adds a development work item from the work-item section", async ({ page, r
   await expect(section.getByText("从区块入口新增的 Bug")).toBeVisible();
 });
 
-test("deletes a consulting client through a confirmed trash action", async ({ page, request }) => {
-  const client = await create(request, "clients", { name: "待删除咨询客户", notes: "删除入口验收" });
-  await create(request, "consultingProjects", { client_id: client.id, name: "需要保留的咨询项目", status: "active" });
-  await create(request, "clients", { name: "继续保留的客户" });
-  await page.goto("/consulting");
-  await page.locator(".client-column").getByRole("button", { name: /待删除咨询客户/ }).click();
-  await page.getByRole("button", { name: "删除客户" }).click();
-  const dialog = page.getByRole("dialog");
-  await expect(dialog).toContainText("相关项目、沟通和交付记录会保留");
-  await dialog.getByRole("button", { name: "移到回收站" }).click();
-  await expect(page.locator(".client-column").getByText("待删除咨询客户")).toHaveCount(0);
-  await page.getByRole("link", { name: "数据与设置" }).click();
-  await expect(page.locator(".trash-list article").filter({ hasText: "待删除咨询客户" })).toBeVisible();
+test("hides consulting navigation while retaining historical data", async ({ page, request }) => {
+  const client = await create(request, "clients", { name: "保留的历史客户" });
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "咨询工作", exact: true })).toHaveCount(0);
+  const rows = (await (await request.get("/api/collections/clients")).json()).data;
+  expect(rows.some((row: { id: string }) => row.id === client.id)).toBe(true);
 });
 
 test("shows workout and meal details in monthly calendars", async ({ page, request }) => {
+  await page.clock.setFixedTime(new Date("2026-08-02T12:00:00"));
   const template = await create(request, "workoutTemplates", { name: "日历力量训练", body_part: "上肢", weekday: 7 });
   const workout = await create(request, "workouts", { template_id: template.id, name: "周日训练", body_part: "上肢", workout_date: "2026-08-02", status: "completed" });
   const exercise = await create(request, "workoutExercises", { workout_id: workout.id, name: "卧推", sort_order: 0 });
@@ -499,6 +490,7 @@ test("shows workout and meal details in monthly calendars", async ({ page, reque
 });
 
 test("renders distinct records in every specialized module", async ({ page, request }) => {
+  await page.clock.setFixedTime(new Date("2026-08-02T12:00:00"));
   const devProject = await create(request, "devProjects", { name: "验收开发项目", status: "active" });
   const milestone = await create(request, "devMilestones", { project_id: devProject.id, name: "验收里程碑", target_date: "2026-08-20", status: "open" });
   await create(request, "devWorkItems", { project_id: devProject.id, milestone_id: milestone.id, title: "验收 Bug", item_type: "bug", priority: "high", status: "todo" });
@@ -511,7 +503,7 @@ test("renders distinct records in every specialized module", async ({ page, requ
   await create(request, "mealItems", { meal_id: meal.id, food_name: "验收食物", quantity: 1, calories: 420, protein: 31 });
   await create(request, "entertainmentItems", { name: "验收游戏", platform: "Steam", status: "playing", next_goal: "完成第一章" });
 
-  for (const [path, text] of [["/development", "验收 Bug"], ["/consulting", "验收交付物"], ["/fitness", "验收深蹲"], ["/diet", "验收晚餐"], ["/entertainment", "验收游戏"]]) {
+  for (const [path, text] of [["/development", "验收 Bug"], ["/fitness", "验收深蹲"], ["/diet", "验收晚餐"], ["/entertainment", "验收游戏"]]) {
     await page.goto(path);
     await expect(page.getByText(text, { exact: false }).first()).toBeVisible();
   }

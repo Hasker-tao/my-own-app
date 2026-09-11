@@ -1,6 +1,7 @@
 import { classNames } from "../utils";
 
 export const moduleArtworkSources = {
+  learning: "/assets/brand/learning.svg",
   dashboard: "/assets/module-icons/dashboard-v1.webp",
   today: "/assets/module-icons/today-v1.webp",
   media: "/assets/module-icons/media-v1.webp",

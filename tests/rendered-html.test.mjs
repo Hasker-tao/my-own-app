@@ -9,9 +9,9 @@ test("production HTML contains the local app entry point and no remote runtime a
     .filter((file) => file.endsWith(".css"))
     .map((file) => fs.readFileSync(new URL(file, assetsDirectory), "utf8"))
     .join("\n");
-  assert.match(html, /<title>木子工作台<\/title>/);
+  assert.match(html, /<title>hasker工作台<\/title>/);
   assert.match(html, /<div id="root"><\/div>/);
-  assert.match(html, /\/assets\/neo\/muzi-app-icon-favicon\.png/);
+  assert.match(html, /\/assets\/brand\/hasker-mark\.svg/);
   assert.doesNotMatch(html, /https?:\/\/(fonts|cdn|unpkg|jsdelivr)\./i);
   assert.match(html, /\/assets\//);
   for (const file of ["chromatic-polymer-light-v1.webp", "chromatic-polymer-dark-v1.webp"]) {
@@ -25,7 +25,7 @@ test("production HTML contains the local app entry point and no remote runtime a
   for (const file of ["muzi-app-icon-v1.webp", "muzi-app-icon-v1.png", "favicon-64-v1.png"]) {
     assert.equal(fs.existsSync(new URL(`../dist/assets/brand/${file}`, import.meta.url)), true, `${file} should be bundled locally`);
   }
-  for (const file of ["brand/muzi-mark.svg", "notebook/module-stickers.png"]) {
+  for (const file of ["brand/hasker-mark.svg", "brand/muzi-mark.svg", "notebook/module-stickers.png"]) {
     assert.equal(fs.existsSync(new URL(`../dist/assets/${file}`, import.meta.url)), true, `${file} should be bundled locally`);
   }
   for (const file of ["module-emblems.png", "muzi-app-icon-v1.png", "muzi-app-icon-brand.png", "muzi-app-icon-favicon.png"]) {
