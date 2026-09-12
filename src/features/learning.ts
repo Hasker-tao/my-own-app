@@ -1,9 +1,11 @@
-export type LearningResource = { id: string; title: string; url: string; kind: "resource" | "folder" | "assign" | "quiz" | "page" | "url"; dates?: string };
+export type Coursework = { status: "unknown" | "not_submitted" | "draft" | "submitted"; statusText: string; due: string; dueAt?: string; files: string[]; modified: string; grading: string; grade: string; checkedAt: string; error?: string };
+export type LearningNotice = { id: string; courseId: string; title: string; url: string; createdAt: string; read: boolean };
+export type LearningResource = { id: string; title: string; url: string; kind: "resource" | "folder" | "assign" | "quiz" | "page" | "url"; dates?: string; coursework?: Coursework; missing?: boolean };
 export type LearningTopic = { id: string; title: string; resources: LearningResource[]; included: boolean; taught: boolean; missing?: boolean };
-export type LearningCourse = { id: string; title: string; url: string; selected: boolean; topics: LearningTopic[]; syncedAt: string };
+export type LearningCourse = { id: string; title: string; url: string; selected: boolean; topics: LearningTopic[]; syncedAt: string; seenResources?: string[] };
 export type LearningRecord = { id: string; courseId: string; topicId: string; date: string; action: "review" | "preview" | "practice"; completion: "partial" | "complete"; understanding: "unknown" | "difficult" | "prompted" | "independent"; position: string; minutes: number; notes: string; createdAt: string; updatedAt: string };
-export type LearningState = { courses: LearningCourse[]; records: LearningRecord[]; budget: number; sync: { attemptedAt: string | null; successAt: string | null; message: string; status: "idle" | "ok" | "error" } };
-export const emptyLearning: LearningState = { courses: [], records: [], budget: 60, sync: { attemptedAt: null, successAt: null, message: "尚未读取 Moodle", status: "idle" } };
+export type LearningState = { courses: LearningCourse[]; records: LearningRecord[]; budget: number; notices: LearningNotice[]; sync: { attemptedAt: string | null; successAt: string | null; message: string; status: "idle" | "ok" | "error" } };
+export const emptyLearning: LearningState = { courses: [], records: [], budget: 60, notices: [], sync: { attemptedAt: null, successAt: null, message: "尚未读取 Moodle", status: "idle" } };
 export function topicProgress(state: LearningState, courseId: string, topicId: string) {
   const records = state.records.filter(r => r.courseId === courseId && r.topicId === topicId).sort((a, b) => a.date.localeCompare(b.date) || a.updatedAt.localeCompare(b.updatedAt));
   const reviews = records.filter(r => r.action !== "preview");
@@ -25,4 +27,11 @@ export function todaySuggestions(state: LearningState, date: string) {
     return { course, topic, reason: p.understanding === "difficult" ? "回顾薄弱点" : !p.covered ? "首次巩固 / 继续上次" : "间隔回顾", eligible: !p.last || (p.last.date !== date && (!p.covered || age >= interval)), rank: p.understanding === "difficult" ? 0 : !p.covered ? 1 : 2, age };
   })).filter(o => o.eligible).sort((a, b) => a.rank - b.rank || b.age - a.age || a.topic.id.localeCompare(b.topic.id));
   return options.flatMap(o => { if (remaining < 10) return []; const minutes = Math.min(20, remaining); remaining -= minutes; return [{ ...o, minutes }]; }).slice(0, 3);
+}
+
+export function courseworkTasks(state: LearningState) {
+  return state.courses.filter(c => c.selected).flatMap(course => {
+    const seen = new Set<string>();
+    return course.topics.flatMap(topic => topic.resources.filter(r => r.kind === "assign" && !seen.has(r.id) && Boolean(seen.add(r.id))).map(resource => ({ course, topic, resource })));
+  }).sort((a,b) => (a.resource.coursework?.dueAt || "9999").localeCompare(b.resource.coursework?.dueAt || "9999"));
 }

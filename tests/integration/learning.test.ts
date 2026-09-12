@@ -24,6 +24,21 @@ describe("learning persistence and import",()=>{
     const s=(await call("GET","")).json().data;expect(s.records).toHaveLength(1);expect(s.courses[0].topics[0].taught).toBe(true);expect(s.courses[0].topics[1].included).toBe(false);
     await app.close();app=await buildApp({dataDir:dir,autoBackup:false});expect((await call("GET","")).json().data.records).toHaveLength(1);
   });
+  it("syncs every selected course, keeps partial successes and marks messages read",async()=>{
+    await seed();
+    const second={...incoming(),id:"456",title:"Second course",url:"https://moodle.nottingham.ac.uk/course/view.php?id=456"};
+    vi.mocked(readMoodle).mockResolvedValueOnce(second);
+    expect((await call("POST","/moodle",{courseId:"456"})).statusCode).toBe(200);
+    const updated=incoming();
+    updated.topics[0].resources.push({id:"resource:2",title:"New slides",kind:"resource",url:"https://moodle.nottingham.ac.uk/mod/resource/view.php?id=2"});
+    vi.mocked(readMoodle).mockImplementation(async id => id === "123" ? updated : Promise.reject(new Error("offline")));
+    expect((await call("POST","/sync",{})).statusCode).toBe(400);
+    const state=(await call("GET","")).json().data;
+    expect(state.courses).toHaveLength(2);
+    expect(state.sync.status).toBe("error");
+    expect(state.notices).toHaveLength(1);
+    expect((await call("PUT","/notices/read",{ids:[state.notices[0].id]})).json().data.notices[0].read).toBe(true);
+  });
   it("does not replace saved data when session expires or import is invalid",async()=>{
     await seed();vi.mocked(readMoodle).mockRejectedValue(new Error("登录已失效"));expect((await call("POST","/moodle",{courseId:"123"})).statusCode).toBe(400);
     let s=(await call("GET","")).json().data;expect(s.courses).toHaveLength(1);expect(s.sync.status).toBe("error");expect(s.sync.successAt).toBeTruthy();

@@ -42,6 +42,7 @@
 .learning-topic input[type=checkbox] { accent-color:var(--learning-accent); }
 [data-theme=dark] .learning-page { --learning-accent:#79cab8; }
 @media(max-width:650px) { .learning-task,.learning-topic-head { flex-wrap:wrap; } .learning-form-grid { grid-template-columns:1fr; } .learning-courses { grid-template-columns:1fr; } }
+@media(max-width:650px) { .learning-tabs { flex-wrap:wrap; } .learning-tabs button { flex:1 1 auto; } .learning-coursework dl>div { grid-template-columns:1fr; gap:3px; } }
 .neo-shell[data-module="learning"] { --mix-a:var(--neo-teal); --mix-b:var(--neo-coral); --mix-c:var(--neo-blue); --mix-d:var(--neo-sun); --mix-e:var(--neo-leaf); --module-stamp:"04 / LEARN"; --emblem-x:0%; --emblem-y:50%; }
 @media(max-width:767px) {
   body:has(.app-shell[data-module="learning"]) { min-width:0; }
@@ -59,3 +60,24 @@
   .learning-topic-head>div { min-width:0; overflow-wrap:anywhere; }
   .learning-inline { font-size:12px; }
 }
+
+.learning-ring { position:relative; width:110px; height:110px; margin:16px auto; }
+.learning-ring svg { width:100%; height:100%; transform:rotate(-90deg); }
+.learning-ring circle { fill:none; stroke:#89948e33; stroke-width:9; }
+.learning-ring .learning-ring-value { stroke:var(--learning-accent); }
+.learning-ring>span { position:absolute; inset:0; display:grid; place-items:center; font-size:24px; font-weight:700; }
+.learning-overview-heading { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:center; }
+.learning-overview-heading h2 { margin:0; }
+.learning-overview-heading p { font-size:14px; }
+.learning-news-banner { text-align:left; padding:16px; background:var(--surface,#ffffff88); border:1px solid var(--learning-accent); border-radius:10px; color:inherit; cursor:pointer; }
+.learning-coursework { padding:24px 0; border-bottom:1px solid #89948e55; }
+.learning-coursework h3 { margin:8px 0; font-size:17px; }
+.learning-coursework dl { display:grid; gap:12px; font-size:14px; }
+.learning-coursework dl>div { display:grid; grid-template-columns:110px minmax(0,1fr); gap:12px; }
+.learning-coursework dd { margin:0; overflow-wrap:anywhere; }
+.learning-warning { color:var(--text-primary,inherit); border-left:3px solid #c88a27; padding-left:12px; }
+.learning-time-helper { padding:16px 0; font-size:14px; }
+.learning-import-option { display:flex; gap:12px; align-items:start; line-height:1.6; }
+.learning-import-option input { width:auto; margin-top:5px; }
+.learning-tabs { overflow-x:auto; }
+.learning-tabs button { flex-shrink:0; }

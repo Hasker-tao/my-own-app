@@ -5,11 +5,22 @@ import { emptyLearning } from "../../src/features/learning";
 
 test("records partial work and optional assessment, edits it, persists on reload and excludes previews from coverage",async({page,request},info)=>{
   const state=structuredClone(emptyLearning);
-  state.courses=[{id:"987654",title:"测试课程 · 电路与系统（合成验收数据）",url:"https://moodle.nottingham.ac.uk/course/view.php?id=987654",selected:true,syncedAt:new Date().toISOString(),topics:[{id:"section-1",title:"Lecture 1 · 线性电路",included:true,taught:false,resources:[{id:"folder:1",title:"Lecture slides",kind:"folder",url:"https://moodle.nottingham.ac.uk/mod/folder/view.php?id=1"}]},{id:"section-2",title:"Lecture 2 · 信号分析",included:false,taught:false,resources:[]}]}];
+  state.courses=[{id:"987654",title:"测试课程 · 电路与系统（合成验收数据）",url:"https://moodle.nottingham.ac.uk/course/view.php?id=987654",selected:true,syncedAt:new Date().toISOString(),topics:[{id:"section-1",title:"Lecture 1 · 线性电路",included:true,taught:false,resources:[{id:"folder:1",title:"Lecture slides",kind:"folder",url:"https://moodle.nottingham.ac.uk/mod/folder/view.php?id=1"},{id:"assign:2",title:"Coursework 1",kind:"assign",url:"https://moodle.nottingham.ac.uk/mod/assign/view.php?id=2",coursework:{status:"draft",statusText:"Draft (not submitted)",due:"9月20日 16:00",files:["report.pdf"],modified:"9月11日",grading:"Not graded",grade:"",checkedAt:new Date().toISOString()}}]},{id:"section-2",title:"Lecture 2 · 信号分析",included:false,taught:false,resources:[]}]},{id:"987655",title:"测试课程 · 控制系统（合成验收数据）",url:"https://moodle.nottingham.ac.uk/course/view.php?id=987655",selected:true,syncedAt:new Date().toISOString(),topics:[{id:"section-1",title:"Lecture 1 · Feedback",included:true,taught:true,resources:[]}]}];
+  state.notices=[{id:"new:987654:assign:2",courseId:"987654",title:"电路与系统 · 新 coursework：Coursework 1",url:"https://moodle.nottingham.ac.uk/mod/assign/view.php?id=2",createdAt:new Date().toISOString(),read:false}];
   const db=new Database(path.resolve('.test-data/e2e/data/app.sqlite'));
   db.prepare("INSERT INTO learning_workspace(id,payload) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload").run(JSON.stringify(state));db.close();
   await request.put("/api/settings",{data:{appearance:"liquid",theme:"light"}});
   await page.goto('/learning');
+  await expect(page.getByRole('button',{name:/测试课程 · 电路与系统/})).toBeVisible();
+  await expect(page.getByRole('button',{name:/测试课程 · 控制系统/})).toBeVisible();
+  await expect(page.getByRole('img',{name:/电路与系统.*待确认授课范围/})).toBeVisible();
+  await page.getByRole('tab',{name:/Coursework 待办/}).click();
+  await expect(page.getByText('已上传草稿 · 尚未提交')).toBeVisible();
+  await expect(page.getByText('report.pdf')).toBeVisible();
+  await page.getByRole('tab',{name:/消息/}).click();
+  await expect(page.getByText(/新 coursework：Coursework 1/)).toBeVisible();
+  await page.getByRole('tab',{name:/我的课程/}).click();
+  await page.getByRole('button',{name:/测试课程 · 电路与系统/}).click();
   const topic=page.locator('.learning-topic').filter({hasText:'Lecture 1'});
   await topic.getByRole('button',{name:'记录学习'}).click();
   let dialog=page.getByRole('dialog');
@@ -47,6 +58,6 @@ test("records partial work and optional assessment, edits it, persists on reload
     await page.screenshot({path:info.outputPath(`learning-${appearance}-mobile.png`),fullPage:true,animations:"disabled"});
   }
   await page.setViewportSize({width:1440,height:1000});
-  await page.getByRole('tab',{name:'今天复习'}).click();await expect(page.getByText('实际复习 / 做题')).toBeVisible();
-  await page.goto('/');await expect(page.getByText(/已授课中已复习 1\/1/)).toBeVisible();
+  await page.getByRole('tab',{name:'今天复习'}).click();await expect(page.getByRole('heading',{name:'今天需要复习的课程与课件'})).toBeVisible();
+  await page.goto('/');await expect(page.getByText(/已授课中已复习 1\/2/)).toBeVisible();
 });

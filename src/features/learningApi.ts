@@ -8,7 +8,7 @@ export async function learningRequest<T>(path = "", method = "GET", body?: unkno
 }
 export function useLearning() {
   const client = useQueryClient();
-  const query = useQuery({ queryKey: ["learning"], queryFn: () => learningRequest<LearningState>(), staleTime: 5000 });
+  const query = useQuery({ queryKey: ["learning"], queryFn: () => learningRequest<LearningState>(), staleTime: 5000, refetchInterval: 30000 });
   const refresh = () => client.invalidateQueries({ queryKey: ["learning"] });
   return { ...query, refresh, setData: (state: LearningState) => client.setQueryData(["learning"], state) };
 }
