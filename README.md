@@ -2,6 +2,8 @@
 
 基于 [TianyiDataScience/my-own-app](https://github.com/TianyiDataScience/my-own-app) 改造的本地个人工作台。项目使用 React、Fastify 和 SQLite，在本机保存个人数据，并提供学习、内容、开发、健身、饮食与娱乐等模块。
 
+> 当前为个人维护的早期版本。核心工作台支持 macOS 和 Windows；UNNC Moodle 同步目前仅支持 macOS 与 Google Chrome。
+
 ## 当前功能
 
 - **学习工作台**：从已登录的 UNNC Moodle 读取课程目录、课件链接和 Coursework 状态；支持多课程总览、课件学习进度、考试前复习、Part 折叠、重要星标、学习记录及站内更新消息。
@@ -35,34 +37,24 @@ Coursework 待办汇总截止时间、学校提交状态、上传文件、评分
 
 ## 快速启动
 
-### 当前项目电脑
-
-双击项目外层的 `启动hasker工作台.command`，或运行：
-
-```sh
-/Users/hasker/Documents/Codex/Workspace/project005/启动hasker工作台.command
-```
-
-工作台地址为 [http://127.0.0.1:4317](http://127.0.0.1:4317)。关闭浏览器不会停止后台服务；页面中的“保存并退出”会安全保存并关闭服务。
-
-### 其他电脑
-
 需要 Node.js 22.13 或更高版本：
 
 ```sh
 git clone https://github.com/Hasker-tao/my-own-app.git
 cd my-own-app
-git switch feature/learning-v1
-npm install
-npm run build
+npm ci
 npm run app:start
 ```
 
-macOS 可以双击 `启动hasker工作台.command`，Windows 可以使用 `启动hasker工作台.bat`。新电脑会创建独立的本地数据库，不包含当前电脑的个人记录。
+首次启动会自动构建运行文件并打开 [http://127.0.0.1:4317](http://127.0.0.1:4317)。此后也可以在 macOS 双击 `启动hasker工作台.command`，或在 Windows 双击 `启动hasker工作台.bat`。关闭浏览器不会停止后台服务；页面中的“保存并退出”会安全保存并关闭服务。
+
+每台电脑都会创建独立的本地数据库，不包含开发者或其他用户的个人记录。
 
 ## Moodle 连接
 
-1. 在 Google Chrome 登录 [UNNC Moodle](https://moodle.nottingham.ac.uk)。
+Moodle 同步目前仅支持 macOS，并且只适配 UNNC Moodle。其他平台仍可使用工作台的其余功能。
+
+1. 在 macOS 的 Google Chrome 登录 [UNNC Moodle](https://moodle.nottingham.ac.uk)。
 2. 在 Chrome“查看 → 开发者”中开启“允许 Apple 事件中的 JavaScript”。
 3. 打开学习模块，读取可见课程并选择本学期课程。
 
@@ -70,10 +62,12 @@ Moodle 接入只读取账号有权访问的页面信息，不保存学校密码�
 
 ## 本机数据
 
-当前项目电脑的个人数据位于：
+默认数据目录为：
 
 ```text
-/Users/hasker/Documents/Codex/Workspace/project005/work/MuziWorkspace/
+macOS:   ~/Library/Application Support/MuziWorkspace/
+Windows: %LOCALAPPDATA%\MuziWorkspace\
+Linux:   ~/.local/share/MuziWorkspace/
 ```
 
 其中包含 SQLite 数据库、备份、导出和日志。该目录以及 `*.sqlite`、`dist/`、`node_modules/` 和测试产物均被 Git 忽略，不会上传到 GitHub。
@@ -81,15 +75,6 @@ Moodle 接入只读取账号有权访问的页面信息，不保存学校密码�
 源码回退只改变代码，不会恢复个人数据库。恢复数据请使用设置页的备份功能。
 
 ## 开发与验证
-
-当前项目电脑使用项目自带的 Node.js：
-
-```sh
-cd /Users/hasker/Documents/Codex/Workspace/project005
-export PATH="$PWD/work/node-v22.23.2-darwin-arm64/bin:$PATH"
-export MUZI_DATA_DIR="$PWD/work/MuziWorkspace"
-cd src/my-own-app
-```
 
 常用命令：
 

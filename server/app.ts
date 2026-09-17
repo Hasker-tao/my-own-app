@@ -237,8 +237,8 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     await app.register(fastifyStatic, {
       root,
       wildcard: true,
-      setHeaders: (response, filePath) => {
-        response.setHeader(
+      setHeaders: (reply, filePath) => {
+        reply.header(
           "Cache-Control",
           filePath.endsWith("index.html") ? "no-cache" : "public, max-age=31536000, immutable",
         );
