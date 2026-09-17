@@ -3,7 +3,6 @@ import { classNames } from "../utils";
 export const moduleArtworkSources = {
   learning: "/assets/brand/learning.svg",
   dashboard: "/assets/module-icons/dashboard-v1.webp",
-  today: "/assets/module-icons/today-v1.webp",
   media: "/assets/module-icons/media-v1.webp",
   development: "/assets/module-icons/development-v1.webp",
   consulting: "/assets/module-icons/consulting-v1.webp",
@@ -24,6 +23,7 @@ export function ModuleArtwork({ module, label, className, loading = "eager" }: {
   return (
     <img
       className={classNames("module-artwork", className)}
+      data-module={module}
       src={moduleArtworkSources[module]}
       alt={label ?? ""}
       aria-hidden={label ? undefined : true}

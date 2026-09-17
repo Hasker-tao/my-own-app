@@ -77,6 +77,14 @@
 .learning-coursework dd { margin:0; overflow-wrap:anywhere; }
 .learning-warning { color:var(--text-primary,inherit); border-left:3px solid #c88a27; padding-left:12px; }
 .learning-time-helper { padding:16px 0; font-size:14px; }
+.learning-star { display:inline-flex; align-items:center; gap:6px; border:0; background:none; color:inherit; cursor:pointer; padding:5px 0; }
+.learning-star[aria-pressed=true] { color:#b87900; }
+.learning-review-course { padding:14px 0 24px; border-bottom:1px solid #89948e44; }
+.learning-review-course>h3 { margin-bottom:4px; }
+.learning-review-part { border:1px solid #89948e44; border-radius:10px; padding:12px 14px; margin:10px 0; }
+.learning-review-part>summary { display:flex; justify-content:space-between; align-items:center; gap:12px; cursor:pointer; }
+.learning-review-part>summary>span { display:flex; align-items:center; gap:7px; }
+.learning-review-actions { display:flex; align-items:center; gap:14px; margin-top:14px; }
 .learning-import-option { display:flex; gap:12px; align-items:start; line-height:1.6; }
 .learning-import-option input { width:auto; margin-top:5px; }
 .learning-tabs { overflow-x:auto; }

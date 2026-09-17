@@ -1,9 +1,16 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { mergeCourse } from "../../server/learning";
-import { courseworkTasks, emptyLearning, type Coursework, type LearningResource } from "../../src/features/learning";
+import { courseworkTasks, courseworkComplete, emptyLearning, type Coursework, type LearningResource } from "../../src/features/learning";
 const detail: Coursework = {status:'draft',statusText:'Draft (not submitted)',files:['report.pdf'],due:'Tomorrow',modified:'Today',grading:'Not graded',grade:'',checkedAt:'2026-09-11T08:00:00.000Z'};
 const course = () => ({id:'123',title:'Sample',url:'https://moodle.nottingham.ac.uk/course/view.php?id=123',topics:[{id:'one',title:'Lecture 1',resources:[{id:'assign:1',title:'Report',kind:'assign',url:'https://moodle.nottingham.ac.uk/mod/assign/view.php?id=1',coursework:{...detail}}] as LearningResource[]}]});
+it('treats released grade as completion and keeps manual confirmation separate',()=>{
+  const resource = course().topics[0].resources[0];
+  resource.coursework = {...detail,status:'unknown',statusText:'Reopened',grading:'Released',grade:'40.00 / 40.00',files:[]};
+  expect(courseworkComplete(resource)).toBe(true);
+  resource.coursework.grade='';expect(courseworkComplete(resource)).toBe(false);
+  resource.confirmedAt='2026-09-14T00:00:00.000Z';expect(courseworkComplete(resource)).toBe(true);
+});
 describe('coursework and change messages',()=>{
   it('establishes an enhanced-sync baseline for a pre-upgrade course without flooding messages',()=>{
     const state=structuredClone(emptyLearning);

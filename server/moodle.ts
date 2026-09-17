@@ -37,12 +37,13 @@ export const extractAssignmentScript = String.raw`function extractAssignment(doc
   const statusCell = field('submission status', '提交状态');
   const statusText = clean(statusCell);
   const status = /draft|草稿/i.test(statusText) ? 'draft' : /no (attempt|submission)|not submitted|未提交|尚未提交/i.test(statusText) ? 'not_submitted' : /submitted for grading|submitted|已提交/i.test(statusText) ? 'submitted' : 'unknown';
-  const dueCell = field('due date','截止日期','截止时间') || doc.querySelector('[data-region="activity-dates"] time, .activity-dates time');
+  const activityDue = [...doc.querySelectorAll('[data-region="activity-dates"] > div, .activity-dates > div')].find(el => /^due\s*:/i.test(clean(el.querySelector('strong'))));
+  const dueCell = field('due date','截止日期','截止时间') || activityDue || doc.querySelector('[data-region="activity-dates"] time, .activity-dates time');
   const datetime = dueCell?.querySelector('time[datetime]')?.getAttribute('datetime');
   const dueAt = datetime && /(?:Z|[+-]\d{2}:?\d{2})$/.test(datetime) && !isNaN(Date.parse(datetime)) ? new Date(datetime).toISOString() : undefined;
   const filesCell = field('file submissions','文件提交','提交的文件') || doc.querySelector('.submissionstatustable .fileuploadsubmission');
   const files = [...(filesCell?.querySelectorAll('a[href]') || [])].filter(a => a.getAttribute('href').includes('/pluginfile.php/')).map(clean);
-  const due = dueCell?.closest?.('div') && !values.has('due date') ? clean(dueCell.closest('div')) : clean(dueCell);
+  const due = clean(dueCell).replace(/^due\s*:\s*/i, '');
   return {status, statusText: statusText || '学校页面未提供可识别的提交状态', due, ...(dueAt ? {dueAt} : {}), files:[...new Set(files)], modified:clean(field('last modified','最后修改','最后修改时间')), grading:clean(field('grading status','评分状态')), grade:clean(field('grade','成绩','分数')), checkedAt:new Date().toISOString()};
 }`;
 function quote(value: string) { return JSON.stringify(value); }

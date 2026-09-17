@@ -100,13 +100,17 @@ describe("SQLite persistence and migrations", () => {
         "SELECT name, notes, body_part FROM workout_templates WHERE id = ?",
       ).get("existing-template") as { name: string; notes: string; body_part: string };
       const workoutColumns = upgradedManager.db.pragma("table_info(workouts)") as Array<{ name: string }>;
+      const templateColumns = upgradedManager.db.pragma("table_info(workout_templates)") as Array<{ name: string }>;
+      const metricColumns = upgradedManager.db.pragma("table_info(body_metrics)") as Array<{ name: string }>;
       const versions = upgradedManager.db.prepare(
         "SELECT version FROM schema_migrations ORDER BY version",
       ).all() as Array<{ version: string }>;
 
       expect(template).toEqual({ name: "原有训练模板", notes: "升级后不能丢失", body_part: "" });
       expect(workoutColumns.map((column) => column.name)).toContain("body_part");
-      expect(versions.at(-1)?.version).toBe("003_learning.sql");
+      expect(templateColumns.map((column) => column.name)).toEqual(expect.arrayContaining(["starts_on", "repeat_weeks"]));
+      expect(metricColumns.map((column) => column.name)).toContain("upper_arm");
+      expect(versions.at(-1)?.version).toBe("004_fitness_simple_plans.sql");
     } finally {
       upgradedManager.close();
     }

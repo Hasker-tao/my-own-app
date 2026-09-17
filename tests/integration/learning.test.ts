@@ -17,12 +17,24 @@ const call=(method:"GET"|"POST"|"PUT"|"PATCH",url:string,payload?:object)=>app.i
 async function seed(){expect((await call("POST","/moodle",{courseId:"123"})).statusCode).toBe(200);await call("PATCH","/courses/123/topics/section-1",{taught:true});}
 const record=()=>({id:randomUUID(),courseId:"123",topicId:"section-1",date:"2026-01-01",action:"review",completion:"complete",understanding:"unknown",position:"",minutes:20,notes:""});
 describe("learning persistence and import",()=>{
+  it("saves and reverses manual coursework confirmation across sync",async()=>{
+    const assigned=incoming();assigned.topics[0].resources.push({id:"assign:2",title:"Work",kind:"assign",url:"https://moodle.nottingham.ac.uk/mod/assign/view.php?id=2"});
+    vi.mocked(readMoodle).mockResolvedValue(assigned);
+    await call("POST","/moodle",{courseId:"123"});
+    expect((await call("PATCH","/courses/123/coursework/2",{confirmed:true})).statusCode).toBe(200);
+    await call("POST","/moodle",{courseId:"123"});
+    let resource=(await call("GET","")).json().data.courses[0].topics[0].resources[1];expect(resource.confirmedAt).toBeTruthy();
+    expect((await call("PATCH","/courses/123/coursework/2",{confirmed:false})).statusCode).toBe(200);
+    resource=(await call("GET","")).json().data.courses[0].topics[0].resources[1];expect(resource.confirmedAt).toBeUndefined();
+  });
   it("preserves corrections and records on resync and holds new topics pending",async()=>{
-    await seed();const r=record();expect((await call("PUT","/records",r)).statusCode).toBe(200);await call("PUT","/records",r);
+    await seed();expect((await call("PATCH","/courses/123",{studiedThroughTopicId:"section-1"})).statusCode).toBe(200);expect((await call("PATCH","/courses/123/topics/section-1",{important:true})).statusCode).toBe(200);
+    expect((await call("PATCH","/courses/123",{studiedThroughTopicId:"missing"})).statusCode).toBe(400);
+    const r=record();expect((await call("PUT","/records",r)).statusCode).toBe(200);await call("PUT","/records",r);
     const update=incoming();update.topics.push({id:"section-2",title:"New topic",resources:[]});vi.mocked(readMoodle).mockResolvedValue(update);
     await call("POST","/moodle",{courseId:"123"});
-    const s=(await call("GET","")).json().data;expect(s.records).toHaveLength(1);expect(s.courses[0].topics[0].taught).toBe(true);expect(s.courses[0].topics[1].included).toBe(false);
-    await app.close();app=await buildApp({dataDir:dir,autoBackup:false});expect((await call("GET","")).json().data.records).toHaveLength(1);
+    const s=(await call("GET","")).json().data;expect(s.records).toHaveLength(1);expect(s.courses[0].topics[0].important).toBe(true);expect(s.courses[0].topics[1].included).toBe(false);expect(s.courses[0].studiedThroughTopicId).toBe("section-1");
+    await app.close();app=await buildApp({dataDir:dir,autoBackup:false});expect((await call("GET","")).json().data.courses[0].studiedThroughTopicId).toBe("section-1");
   });
   it("syncs every selected course, keeps partial successes and marks messages read",async()=>{
     await seed();
@@ -45,8 +57,8 @@ describe("learning persistence and import",()=>{
     vi.mocked(readMoodle).mockResolvedValue({...incoming(),topics:[]});expect((await call("POST","/moodle",{courseId:"123"})).statusCode).toBe(400);
     s=(await call("GET","")).json().data;expect(s.courses[0].topics).toHaveLength(1);
   });
-  it("rejects invalid dates, negative time, untaught reviews and external origins",async()=>{
-    await call("POST","/moodle",{courseId:"123"});expect((await call("PUT","/records",record())).statusCode).toBe(400);
+  it("allows exam review records without a taught checkbox and rejects invalid inputs",async()=>{
+    await call("POST","/moodle",{courseId:"123"});expect((await call("PUT","/records",record())).statusCode).toBe(200);
     expect((await call("PUT","/records",{...record(),action:"preview"})).statusCode).toBe(200);
     await call("PATCH","/courses/123/topics/section-1",{taught:true});
     for(const patch of [{date:"2026-02-30"},{date:"2099-01-01"},{minutes:-1}])expect((await call("PUT","/records",{...record(),...patch})).statusCode).toBe(400);

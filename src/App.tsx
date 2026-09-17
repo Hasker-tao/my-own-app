@@ -1,10 +1,9 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { AppLayout } from "./components/Layout";
 import { ErrorState, Skeleton } from "./components/ui";
 
 const DashboardPage = lazy(() => import("./pages/DashboardPage").then((module) => ({ default: module.DashboardPage })));
-const TodayPage = lazy(() => import("./pages/TodayPage").then((module) => ({ default: module.TodayPage })));
 const MediaPage = lazy(() => import("./pages/MediaPage").then((module) => ({ default: module.MediaPage })));
 const DevelopmentPage = lazy(() => import("./pages/DevelopmentPage").then((module) => ({ default: module.DevelopmentPage })));
 const LearningPage = lazy(() => import("./pages/LearningPage").then((module) => ({ default: module.LearningPage })));
@@ -24,7 +23,7 @@ const router = createBrowserRouter([
     errorElement: <div className="route-error"><ErrorState message="页面无法打开，请返回首页后重试。" /></div>,
     children: [
       { index: true, element: <LazyPage><DashboardPage /></LazyPage> },
-      { path: "today", element: <LazyPage><TodayPage /></LazyPage> },
+      { path: "today", element: <Navigate to="/" replace /> },
       { path: "media", element: <LazyPage><MediaPage /></LazyPage> },
       { path: "development", element: <LazyPage><DevelopmentPage /></LazyPage> },
       { path: "learning", element: <LazyPage><LearningPage /></LazyPage> },

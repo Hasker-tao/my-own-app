@@ -36,13 +36,16 @@ function renderApp() {
 afterEach(() => { vi.unstubAllGlobals(); document.documentElement.removeAttribute("data-theme"); document.documentElement.removeAttribute("data-appearance"); window.history.pushState({}, "", "/"); });
 
 describe("application shell", () => {
-  it("renders all nine requested navigation destinations", async () => {
+  it("renders all eight active navigation destinations", async () => {
     mockApi();
     const { container } = renderApp();
-    for (const label of ["首页总览", "今日计划", "自媒体", "开发工作", "学习", "健身计划", "饮食计划", "游戏娱乐", "数据与设置"]) {
+    for (const label of ["首页总览", "自媒体", "开发工作", "学习", "健身计划", "饮食计划", "游戏娱乐", "数据与设置"]) {
       expect(await screen.findByRole("link", { name: label })).toBeInTheDocument();
     }
+    expect(screen.queryByRole("link", { name: "今日计划" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /搜索所有内容/ })).toBeInTheDocument();
+    expect(container.querySelector(".toolbar-context")).not.toBeInTheDocument();
+    expect(container.querySelector(".topbar-create")).not.toBeInTheDocument();
     expect(screen.getByText("仅保存在这台电脑")).toBeInTheDocument();
     expect(container.querySelector(".brand-mark img")).toHaveAttribute("src", "/assets/brand/hasker-mark.svg");
     expect(container.querySelector(".brand-mark")).toHaveTextContent("");
@@ -89,7 +92,7 @@ describe("application shell", () => {
     expect(container.querySelector(".app-shell")).toHaveClass("neo-shell");
     expect(document.querySelector(".ambient-environment")).not.toBeInTheDocument();
     expect(container.querySelector(".brand-mark img")).toHaveAttribute("src", "/assets/brand/hasker-mark.svg");
-    expect(container.querySelectorAll(".neo-nav-emblem")).toHaveLength(8);
+    expect(container.querySelectorAll(".neo-nav-emblem")).toHaveLength(7);
   });
 
   it("shows save failure instead of a false saved state", async () => {

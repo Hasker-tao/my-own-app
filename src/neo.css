@@ -371,9 +371,9 @@
 .neo-shell .topbar {
   position: sticky;
   top: 0;
-  min-height: 78px;
+  min-height: 56px;
   margin: 0;
-  padding: 12px 28px;
+  padding: 8px 24px;
   border: 0;
   border-bottom: var(--neo-line-heavy);
   border-radius: 0;
@@ -385,7 +385,7 @@
   z-index: var(--z-toolbar);
 }
 
-.neo-shell .topbar-left { gap: 14px; }
+.neo-shell .topbar-left { gap: 8px; }
 .neo-shell .toolbar-page-icon { display: none; }
 .neo-shell .toolbar-context { display: grid; gap: 1px; }
 .neo-shell .toolbar-context strong { font-size: 17px; font-weight: 820; letter-spacing: -.045em; }
@@ -399,6 +399,8 @@
   letter-spacing: .12em;
 }
 .neo-shell .topbar-actions { gap: 9px; }
+.neo-shell .toolbar-search { border: 0; box-shadow: none; background: transparent; }
+.neo-shell .toolbar-search:hover { background: var(--neo-paper-deep); }
 .neo-shell .search-trigger {
   height: 36px;
   min-width: 196px;

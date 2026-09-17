@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { FastifyInstance } from "fastify";
 import type { DatabaseManager } from "./database.js";
 import { ValidationError, NotFoundError } from "./store.js";
-import { emptyLearning, type LearningCourse, type LearningState, type LearningTopic } from "../src/features/learning.js";
+import { emptyLearning, materialTopics, type LearningCourse, type LearningResource, type LearningState, type LearningTopic } from "../src/features/learning.js";
 import { readMoodle } from "./moodle.js";
 
 export function learningState(manager: DatabaseManager): LearningState {
@@ -49,12 +49,12 @@ export function mergeCourse(state: LearningState, raw: unknown) {
     if (topicIds.has(t.id)) throw new ValidationError("课程主题重复，请重新读取");
     topicIds.add(t.id);
     const previous = old?.topics.find(p => p.id === t.id);
-    const resources = t.resources.map(r => ({ ...r, missing: false }));
+    const resources: LearningResource[] = t.resources.map(r => ({ ...r, missing: false, confirmedAt: oldResources.get(r.id)?.confirmedAt }));
     for (const r of previous?.resources ?? []) if (!checked.has(r.id)) resources.push({ ...r, missing: true });
-    return { ...t, resources, included: previous?.included ?? !old, taught: previous?.taught ?? false, missing: false };
+    return { ...t, resources, included: previous?.included ?? !old, taught: previous?.taught ?? false, important: previous?.important ?? false, missing: false };
   });
   for (const t of old?.topics ?? []) if (!topicIds.has(t.id)) topics.push({ ...t, missing: true });
-  const course: LearningCourse = { ...incoming, topics, selected: old?.selected ?? true, syncedAt: new Date().toISOString(), seenResources: [...seenResources] };
+  const course: LearningCourse = { ...incoming, topics, selected: old?.selected ?? true, syncedAt: new Date().toISOString(), seenResources: [...seenResources], studiedThroughTopicId: old?.studiedThroughTopicId };
   if (old) state.courses[state.courses.indexOf(old)] = course; else state.courses.push(course);
 }
 const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(s => { const d = new Date(s); return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s; }, "日期无效");
@@ -94,13 +94,28 @@ export function registerLearning(app: FastifyInstance, manager: DatabaseManager)
   });
   app.patch("/api/learning/courses/:id", async request => {
     const { id } = request.params as { id: string };
-    const body = z.object({ selected: z.boolean() }).parse(request.body);
-    return { data: changeLearning(manager, s => { const c = s.courses.find(c => c.id === id); if (!c) throw new NotFoundError("课程不存在"); c.selected = body.selected; }) };
+    const body = z.object({ selected: z.boolean().optional(), studiedThroughTopicId: z.string().nullable().optional() }).parse(request.body);
+    return { data: changeLearning(manager, s => {
+      const c = s.courses.find(c => c.id === id);
+      if (!c) throw new NotFoundError("课程不存在");
+      if (body.studiedThroughTopicId && !materialTopics(c).some(t => t.id === body.studiedThroughTopicId)) throw new ValidationError("请选择当前课程中包含课件的主题");
+      if (body.selected !== undefined) c.selected = body.selected;
+      if (body.studiedThroughTopicId !== undefined) c.studiedThroughTopicId = body.studiedThroughTopicId ?? undefined;
+    }) };
   });
   app.patch("/api/learning/courses/:id/topics/:topicId", async request => {
     const { id, topicId } = request.params as { id: string; topicId: string };
-    const body = z.object({ taught: z.boolean().optional(), included: z.boolean().optional() }).parse(request.body);
+    const body = z.object({ taught: z.boolean().optional(), included: z.boolean().optional(), important: z.boolean().optional() }).parse(request.body);
     return { data: changeLearning(manager, s => { const t = s.courses.find(c => c.id === id)?.topics.find(t => t.id === topicId); if (!t) throw new NotFoundError("主题不存在"); Object.assign(t, body); }) };
+  });
+  app.patch("/api/learning/courses/:id/coursework/:resourceId", async request => {
+    const { id, resourceId } = request.params as { id: string; resourceId: string };
+    const { confirmed } = z.object({ confirmed: z.boolean() }).parse(request.body);
+    return { data: changeLearning(manager, s => {
+      const resource = s.courses.find(c => c.id === id)?.topics.flatMap(t => t.resources).find(r => r.id === `assign:${resourceId}`);
+      if (!resource) throw new NotFoundError("Coursework 不存在");
+      resource.confirmedAt = confirmed ? new Date().toISOString() : undefined;
+    }) };
   });
   app.put("/api/learning/records", async request => {
     const body = recordSchema.parse(request.body);
@@ -109,7 +124,6 @@ export function registerLearning(app: FastifyInstance, manager: DatabaseManager)
     return { data: changeLearning(manager, s => {
       const topic = s.courses.find(c => c.id === body.courseId)?.topics.find(t => t.id === body.topicId);
       if (!topic) throw new NotFoundError("主题不存在");
-      if (body.action !== "preview" && !topic.taught) throw new ValidationError("请先确认已授课，或将本次记录设为预习");
       const old = s.records.find(r => r.id === body.id);
       if (old && (old.courseId !== body.courseId || old.topicId !== body.topicId)) throw new ValidationError("记录归属不能修改");
       const now = new Date().toISOString();

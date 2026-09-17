@@ -108,7 +108,7 @@ export const collectionDefinitions = {
     title: "name",
     module: "fitness",
     required: ["name"],
-    fields: ["name", "body_part", "weekday", "notes"],
+    fields: ["name", "body_part", "weekday", "starts_on", "repeat_weeks", "notes"],
     search: ["name", "notes"],
   },
   workoutTemplateExercises: {
@@ -148,7 +148,7 @@ export const collectionDefinitions = {
     title: "metric_date",
     module: "fitness",
     required: ["metric_date"],
-    fields: ["metric_date", "weight", "waist", "chest", "body_fat", "notes"],
+    fields: ["metric_date", "weight", "waist", "upper_arm", "chest", "body_fat", "notes"],
     search: ["notes"],
   },
   nutritionTargets: {

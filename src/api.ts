@@ -34,12 +34,6 @@ export const api = {
     request<Entity>(`/api/collections/${collection}/${id}/restore`, { method: "POST" }),
   permanentDelete: (collection: CollectionName, id: string) =>
     request<void>(`/api/collections/${collection}/${id}/permanent`, { method: "DELETE" }),
-  completePlan: (id: string) => request<Entity>(`/api/plan-items/${id}/complete`, { method: "POST" }),
-  postponePlan: (id: string, date: string) =>
-    request<Entity>(`/api/plan-items/${id}/postpone`, { method: "POST", body: JSON.stringify({ date }) }),
-  getReview: (date: string) => request<Entity | null>(`/api/daily-reviews/${date}`),
-  setReview: (date: string, content: string) =>
-    request<Entity>(`/api/daily-reviews/${date}`, { method: "PUT", body: JSON.stringify({ content }) }),
   convertMemo: (id: string, collection: CollectionName, fields: Record<string, any>) =>
     request<Entity>(`/api/quick-memos/${id}/convert`, { method: "POST", body: JSON.stringify({ collection, fields }) }),
   settings: () => request<Record<string, any>>("/api/settings"),

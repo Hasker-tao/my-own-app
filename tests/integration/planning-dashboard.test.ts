@@ -22,19 +22,20 @@ async function create(collection: string, payload: Record<string, any>) {
   return response.json().data;
 }
 
-describe("dashboard and daily planning", () => {
-  it("separates timed and unscheduled items and updates progress after completion", async () => {
-    const timed = await create("planItems", { title: "上午咨询", plan_date: "2026-08-02", start_time: "09:30", estimated_minutes: 60, priority: "high" });
-    await create("planItems", { title: "整理笔记", plan_date: "2026-08-02", estimated_minutes: 30 });
-    let dashboard = await app.inject({ method: "GET", url: "/api/dashboard?date=2026-08-02" });
-    expect(dashboard.json().data.timeline.map((item: any) => item.title)).toEqual(["上午咨询"]);
-    expect(dashboard.json().data.unscheduled.map((item: any) => item.title)).toEqual(["整理笔记"]);
-    expect(dashboard.json().data.overview).toMatchObject({ completed: 0, total: 2, scheduledMinutes: 90, progress: 0 });
-
-    const completed = await app.inject({ method: "POST", url: `/api/plan-items/${timed.id}/complete` });
-    expect(completed.statusCode).toBe(200);
-    dashboard = await app.inject({ method: "GET", url: "/api/dashboard?date=2026-08-02" });
-    expect(dashboard.json().data.overview).toMatchObject({ completed: 1, total: 2, progress: 50 });
+describe("dashboard and historical planning compatibility", () => {
+  it("excludes historical plans from dashboard while retaining records and module summaries", async () => {
+    const old = await create("planItems", { title: "历史逾期事项", plan_date: "2026-08-01" });
+    await create("planItems", { title: "今天的历史安排", plan_date: "2026-08-02", start_time: "09:30" });
+    const media = await create("mediaContents", { title: "继续制作", stage: "producing" });
+    const dashboard = (await app.inject({ method: "GET", url: "/api/dashboard?date=2026-08-02" })).json().data;
+    expect(dashboard).not.toHaveProperty("overview");
+    expect(dashboard).not.toHaveProperty("timeline");
+    expect(dashboard).not.toHaveProperty("unscheduled");
+    expect(dashboard.attention.some((item: any) => item.module === "today")).toBe(false);
+    expect(dashboard.summaries.media[0].id).toBe(media.id);
+    const state = (await app.inject({ method: "GET", url: "/api/state" })).json().data;
+    expect(state.planItems).toHaveLength(2);
+    expect(state.planItems.find((item: any) => item.id === old.id).status).toBe("todo");
   });
 
   it("postpones items and saves the daily review", async () => {
@@ -51,8 +52,6 @@ describe("dashboard and daily planning", () => {
     const media = await create("mediaContents", { title: "最初标题", stage: "producing" });
     await create("planItems", { title: "最初标题", plan_date: "2026-08-02", source_module: "media", source_entity_type: "media_content", source_entity_id: media.id });
     await app.inject({ method: "PATCH", url: `/api/collections/mediaContents/${media.id}`, payload: { title: "更新后的标题" } });
-    const dashboard = await app.inject({ method: "GET", url: "/api/dashboard?date=2026-08-02" });
-    expect(dashboard.json().data.unscheduled[0].display_title).toBe("更新后的标题");
     const state = await app.inject({ method: "GET", url: "/api/state" });
     expect(state.json().data.planItems[0]).toMatchObject({ display_title: "更新后的标题", source_module: "media", source_entity_id: media.id });
   });

@@ -7,23 +7,9 @@ function plusDays(date: string, days: number): string {
 }
 
 export function buildDashboard(store: AppStore, date: string): Record<string, any> {
-  const planItems: Entity[] = store.list("planItems").map((item) => ({
-    ...item,
-    display_title: store.sourceTitle(item.source_entity_type, item.source_entity_id) || item.title,
-  }));
-  const todayItems = planItems.filter((item) => item.plan_date === date && item.status !== "cancelled");
-  const timeline = todayItems.filter((item) => item.start_time).sort((a, b) => a.start_time.localeCompare(b.start_time));
-  const unscheduled = todayItems.filter((item) => !item.start_time);
-  const completed = todayItems.filter((item) => item.status === "done").length;
-  const totalMinutes = todayItems.reduce((sum, item) => sum + Number(item.estimated_minutes || 0), 0);
   const horizon = plusDays(date, 3);
 
   const attention: Entity[] = [];
-  attention.push(
-    ...planItems
-      .filter((item) => item.plan_date < date && !["done", "cancelled"].includes(item.status))
-      .map((item) => ({ ...item, attention_type: "overdue", module: "today" })),
-  );
   attention.push(
     ...store
       .list("consultingDeliverables")
@@ -52,14 +38,6 @@ export function buildDashboard(store: AppStore, date: string): Record<string, an
 
   return {
     date,
-    overview: {
-      completed,
-      total: todayItems.length,
-      progress: todayItems.length ? Math.round((completed / todayItems.length) * 100) : 0,
-      scheduledMinutes: totalMinutes,
-    },
-    timeline,
-    unscheduled,
     attention: attention.slice(0, 12),
     summaries: {
       media: media.filter((item) => ["producing", "ready"].includes(item.stage)).slice(0, 3),

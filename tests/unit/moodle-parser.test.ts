@@ -18,3 +18,9 @@ it("distinguishes uploaded drafts from final submission and retains unknown stat
   expect(parse(documentFor('No submissions have been made yet')).status).toBe('not_submitted');
   expect(parse(documentFor('')).status).toBe('unknown');
 });
+
+it("reads the submission page's activity deadline above the status table", () => {
+  const parse = new Function('doc', `${extractAssignmentScript}; return extractAssignment(doc);`);
+  const doc = new DOMParser().parseFromString(`<div data-region="activity-dates" class="activity-dates"><div><strong>Opened:</strong> Tuesday, 28 October 2025, 12:00 AM</div><div><strong>Due:</strong> Wednesday, 12 November 2025, 5:00 PM</div></div><div class="submissionstatustable"><table><tr><th>Submission status</th><td>Submitted for grading</td></tr><tr><th>File submissions</th><td><a href="/pluginfile.php/1/coursework.zip">coursework.zip</a></td></tr></table></div>`, 'text/html');
+  expect(parse(doc)).toMatchObject({status:'submitted',due:'Wednesday, 12 November 2025, 5:00 PM',files:['coursework.zip']});
+});

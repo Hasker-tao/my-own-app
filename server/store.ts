@@ -153,7 +153,7 @@ export class AppStore {
     if (!normalized) return [];
     const results: Entity[] = [];
     for (const [name, definition] of Object.entries(collectionDefinitions) as Array<[CollectionName, (typeof collectionDefinitions)[CollectionName]]>) {
-      if (definition.search.length === 0) continue;
+      if (name === "planItems" || definition.search.length === 0) continue;
       const where = definition.search.map((field) => `${field} LIKE ?`).join(" OR ");
       const rows = this.manager.db
         .prepare(`SELECT id, ${definition.title} AS title, updated_at FROM ${definition.table} WHERE deleted_at IS NULL AND (${where}) ORDER BY updated_at DESC LIMIT 20`)

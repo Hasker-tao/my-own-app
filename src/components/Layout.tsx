@@ -3,12 +3,14 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   MagnifyingGlass, Plus, FloppyDisk, CheckCircle, WarningCircle, SidebarSimple,
-  ArrowRight, Command, Power,
+  ArrowRight, Power,
+  House, BookOpen, VideoCamera, Code, Barbell, ForkKnife, GameController, GearSix,
 } from "@phosphor-icons/react";
 import { api } from "../api";
 import { useWorkspace } from "../WorkspaceContext";
 import { formatDateTime, classNames } from "../utils";
 import { normalizeAppearance } from "../appearance";
+import { installLocalization, normalizeLanguage } from "../i18n";
 import { Button, IconButton, Modal, Skeleton, ErrorState, Badge } from "./ui";
 import { AmbientEnvironment, chooseAmbientScene } from "./AmbientEnvironment";
 import { ModuleArtwork, type ModuleArtworkName } from "./ModuleArtwork";
@@ -18,7 +20,6 @@ const groups = [
   { label: "日常", links: [
     { to: "/", label: "首页总览", module: "dashboard", tone: "sky" },
     { to: "/learning", label: "学习", module: "learning", tone: "teal" },
-    { to: "/today", label: "今日计划", module: "today", tone: "cyan" },
   ] },
   { label: "工作", links: [
     { to: "/media", label: "自媒体", module: "media", tone: "coral" },
@@ -33,7 +34,7 @@ const groups = [
 ] satisfies Array<{ label: string; links: Array<{ to: string; label: string; module: ModuleArtworkName; tone: string }> }>;
 
 const collectionRoutes: Record<string, string> = {
-  planItems: "/today", mediaContents: "/media", devProjects: "/development", devMilestones: "/development",
+  mediaContents: "/media", devProjects: "/development", devMilestones: "/development",
   devWorkItems: "/development", devLogs: "/development", clients: "/consulting", consultingProjects: "/consulting",
   consultingInteractions: "/consulting", consultingDeliverables: "/consulting", consultingFollowups: "/consulting",
   consultingTimeEntries: "/consulting", workoutTemplates: "/fitness", workouts: "/fitness", bodyMetrics: "/fitness",
@@ -43,7 +44,6 @@ const collectionRoutes: Record<string, string> = {
 
 const routeMeta: Record<string, { label: string; module: ModuleArtworkName; tone: string; index: string }> = {
   "/": { label: "首页总览", module: "dashboard", tone: "sky", index: "00" },
-  "/today": { label: "今日计划", module: "today", tone: "cyan", index: "01" },
   "/media": { label: "自媒体", module: "media", tone: "coral", index: "02" },
   "/development": { label: "开发工作", module: "development", tone: "teal", index: "03" },
   "/learning": { label: "学习", module: "learning", tone: "teal", index: "04" },
@@ -64,12 +64,19 @@ export function AppLayout() {
   const currentPage = routeMeta[location.pathname] ?? routeMeta["/"];
   const appearance = normalizeAppearance(data.settings.appearance);
   const theme = data.settings.theme === "dark" ? "dark" : "light";
+  const language = normalizeLanguage(data.settings.language);
   const ambientScene = chooseAmbientScene(currentPage.module, theme);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.documentElement.dataset.appearance = appearance;
   }, [appearance, theme]);
+
+  useEffect(() => {
+    const root = document.getElementById("root");
+    document.title = language === "en" ? "hasker Workspace" : "hasker工作台";
+    return root ? installLocalization(root, language) : undefined;
+  }, [language]);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -126,7 +133,7 @@ export function AppLayout() {
       await saveNow();
       await api.saveAndExit();
       setExitState("done");
-      document.title = "hasker工作台已安全退出";
+      document.title = language === "en" ? "hasker Workspace has closed safely" : "hasker工作台已安全退出";
     } catch {
       setExitState("error");
     }
@@ -150,7 +157,7 @@ export function AppLayout() {
               <span className="nav-label">{group.label}</span>
               {group.links.map(({ to, label, module, tone }) => (
                 <NavLink key={to} to={to} end={to === "/"} data-tone={tone} className={({ isActive }) => classNames("nav-link", isActive && "active")} title={label}>
-                  {appearance === "neo" ? <NeoModuleEmblem module={module} /> : <ModuleArtwork module={module} />}<span>{label}</span>
+                  {appearance === "neo" ? <NeoModuleEmblem module={module} /> : appearance === "notebook" ? <DesktopModuleIcon module={module} /> : <ModuleArtwork module={module} />}<span>{label}</span>
                 </NavLink>
               ))}
             </div>
@@ -164,14 +171,10 @@ export function AppLayout() {
         <header className="topbar glass-clear">
           <div className="topbar-left">
             <IconButton label={collapsed ? "展开导航" : "收起导航"} onClick={() => setCollapsed((value) => !value)}><SidebarSimple size={20} /></IconButton>
-            <span className="toolbar-page-icon" data-tone={currentPage.tone} aria-hidden="true"><ModuleArtwork module={currentPage.module} /></span>
-            <div className="toolbar-context"><strong>{currentPage.label}</strong><span>{new Intl.DateTimeFormat("zh-CN", { month: "long", day: "numeric", weekday: "long" }).format(new Date())}</span></div>
-            {appearance === "neo" ? <span className="topbar-index">{currentPage.index} / 08</span> : null}
           </div>
           <div className="topbar-actions">
-            <button className="search-trigger glass-clear" aria-label="搜索所有内容" title="搜索所有内容" onClick={() => setSearchOpen(true)}><MagnifyingGlass size={18} /><span>搜索所有内容</span><kbd><Command size={12} />K</kbd></button>
-            <Button className="topbar-create" variant="secondary" size="sm" onClick={() => setQuickOpen(true)}><Plus size={16} />快速新建</Button>
-            <Button className="manual-save" variant="secondary" size="sm" loading={saveStatus === "saving"} onClick={() => void saveNow().catch(() => undefined)}><FloppyDisk size={16} />手动保存</Button>
+            <IconButton className="icon-button toolbar-search" label="搜索所有内容" onClick={() => setSearchOpen(true)}><MagnifyingGlass size={18} /></IconButton>
+            <Button className="manual-save" variant="ghost" size="sm" loading={saveStatus === "saving"} onClick={() => void saveNow().catch(() => undefined)}><FloppyDisk size={16} />手动保存</Button>
             <Button className="save-exit" variant="ghost" size="sm" loading={exitState === "saving"} disabled={exitState === "done"} onClick={() => void saveAndExit()}><Power size={16} />{exitState === "error" ? "退出失败，重试" : "保存并退出"}</Button>
             <SaveIndicator status={saveStatus} />
           </div>
@@ -188,6 +191,14 @@ export function AppLayout() {
 function NeoModuleEmblem({ module }: { module: ModuleArtworkName }) {
   if (module === "learning") return <ModuleArtwork module="learning" />;
   return <span className="neo-nav-emblem" data-module={module} aria-hidden="true" />;
+}
+
+function DesktopModuleIcon({ module }: { module: ModuleArtworkName }) {
+  const icons = { dashboard: House, learning: BookOpen, media: VideoCamera,
+    development: Code, consulting: Code, fitness: Barbell, diet: ForkKnife,
+    entertainment: GameController, settings: GearSix };
+  const Icon = icons[module];
+  return <Icon size={18} weight="regular" aria-hidden="true" />;
 }
 
 function NotebookEnvironment() {
@@ -215,17 +226,17 @@ function SearchModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   const navigate = useNavigate();
   const search = useQuery({ queryKey: ["search", query], queryFn: () => api.search(query), enabled: open && query.trim().length > 0 });
   const grouped = useMemo(() => {
-    return (search.data ?? []).filter(item => item.module !== "consulting").reduce<Record<string, Entity[]>>((result, item) => {
+    return (search.data ?? []).filter(item => !["consulting", "today"].includes(item.module)).reduce<Record<string, Entity[]>>((result, item) => {
       (result[item.module] ??= []).push(item);
       return result;
     }, {});
   }, [search.data]);
-  const moduleNames: Record<string, string> = { dashboard: "首页", today: "今日计划", media: "自媒体", development: "开发工作", consulting: "咨询工作", fitness: "健身计划", diet: "饮食计划", entertainment: "游戏娱乐" };
+  const moduleNames: Record<string, string> = { dashboard: "首页", media: "自媒体", development: "开发工作", consulting: "咨询工作", fitness: "健身计划", diet: "饮食计划", entertainment: "游戏娱乐" };
   return (
     <Modal open={open} title="搜索工作台" description="按模块查找标题、笔记和记录内容" onClose={onClose} wide>
       <div className="command-search glass-clear"><MagnifyingGlass size={20} /><input autoFocus aria-label="搜索关键词" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="输入关键词" /></div>
       <div className="search-results">
-        {!query ? <div className="search-hint">输入内容开始搜索，按 Esc 关闭。</div> : search.isLoading ? <Skeleton lines={4} /> : search.error ? <ErrorState message={(search.error as Error).message} /> : search.data?.length === 0 ? <div className="search-hint">没有找到匹配内容。</div> : Object.entries(grouped).map(([module, items]) => (
+        {!query ? <div className="search-hint">输入内容开始搜索，按 Esc 关闭。</div> : search.isLoading ? <Skeleton lines={4} /> : search.error ? <ErrorState message={(search.error as Error).message} /> : Object.keys(grouped).length === 0 ? <div className="search-hint">没有找到匹配内容。</div> : Object.entries(grouped).map(([module, items]) => (
           <section className="search-group" key={module}><h3>{moduleNames[module] ?? module}</h3>{items.map((item) => (
             <button key={`${item.collection}-${item.id}`} onClick={() => { navigate(collectionRoutes[item.collection] ?? "/"); onClose(); }}><span>{item.title || "未命名记录"}</span><ArrowRight size={16} /></button>
           ))}</section>
@@ -238,7 +249,6 @@ function SearchModal({ open, onClose }: { open: boolean; onClose: () => void }) 
 function QuickCreateModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const navigate = useNavigate();
   const options = [
-    { label: "今日事项", detail: "安排今天要执行的事情", route: "/today?new=1", tone: "cyan", module: "today" },
     { label: "内容灵感", detail: "记录一个自媒体选题", route: "/media?new=1", tone: "coral", module: "media" },
     { label: "开发工作项", detail: "添加功能、需求或 Bug", route: "/development?new=work-item", tone: "teal", module: "development" },
     { label: "学习记录", detail: "记录本次复习或预习", route: "/learning", tone: "teal", module: "learning" },

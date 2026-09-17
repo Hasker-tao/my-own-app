@@ -1,8 +1,8 @@
 export type Coursework = { status: "unknown" | "not_submitted" | "draft" | "submitted"; statusText: string; due: string; dueAt?: string; files: string[]; modified: string; grading: string; grade: string; checkedAt: string; error?: string };
 export type LearningNotice = { id: string; courseId: string; title: string; url: string; createdAt: string; read: boolean };
-export type LearningResource = { id: string; title: string; url: string; kind: "resource" | "folder" | "assign" | "quiz" | "page" | "url"; dates?: string; coursework?: Coursework; missing?: boolean };
-export type LearningTopic = { id: string; title: string; resources: LearningResource[]; included: boolean; taught: boolean; missing?: boolean };
-export type LearningCourse = { id: string; title: string; url: string; selected: boolean; topics: LearningTopic[]; syncedAt: string; seenResources?: string[] };
+export type LearningResource = { id: string; title: string; url: string; kind: "resource" | "folder" | "assign" | "quiz" | "page" | "url"; dates?: string; coursework?: Coursework; missing?: boolean; confirmedAt?: string };
+export type LearningTopic = { id: string; title: string; resources: LearningResource[]; included: boolean; taught: boolean; important?: boolean; missing?: boolean };
+export type LearningCourse = { id: string; title: string; url: string; selected: boolean; topics: LearningTopic[]; syncedAt: string; seenResources?: string[]; studiedThroughTopicId?: string };
 export type LearningRecord = { id: string; courseId: string; topicId: string; date: string; action: "review" | "preview" | "practice"; completion: "partial" | "complete"; understanding: "unknown" | "difficult" | "prompted" | "independent"; position: string; minutes: number; notes: string; createdAt: string; updatedAt: string };
 export type LearningState = { courses: LearningCourse[]; records: LearningRecord[]; budget: number; notices: LearningNotice[]; sync: { attemptedAt: string | null; successAt: string | null; message: string; status: "idle" | "ok" | "error" } };
 export const emptyLearning: LearningState = { courses: [], records: [], budget: 60, notices: [], sync: { attemptedAt: null, successAt: null, message: "尚未读取 Moodle", status: "idle" } };
@@ -15,7 +15,18 @@ export function topicProgress(state: LearningState, courseId: string, topicId: s
 export function courseProgress(state: LearningState, course: LearningCourse) {
   const included = course.topics.filter(t => t.included);
   const taught = included.filter(t => t.taught);
-  return { total: included.length, pending: course.topics.length - included.length, taught: taught.length, covered: taught.filter(t => topicProgress(state, course.id, t.id).covered).length, previewed: included.filter(t => topicProgress(state, course.id, t.id).previewed).length, difficult: included.filter(t => topicProgress(state, course.id, t.id).understanding === "difficult").length };
+  return { total: included.length, pending: course.topics.length - included.length, taught: taught.length, covered: included.filter(t => topicProgress(state, course.id, t.id).covered).length, previewed: included.filter(t => topicProgress(state, course.id, t.id).previewed).length, important: included.filter(t => t.important).length };
+}
+export function materialTopics(course: LearningCourse) {
+  return course.topics.filter(t => t.included && !t.missing && t.resources.some(r => !r.missing && r.kind !== "assign" && r.kind !== "quiz"));
+}
+export function materialProgress(course: LearningCourse) {
+  const topics = materialTopics(course);
+  const count = (topic: LearningTopic) => topic.resources.filter(r => !r.missing && r.kind !== "assign" && r.kind !== "quiz").length;
+  const total = topics.reduce((sum, topic) => sum + count(topic), 0);
+  const index = topics.findIndex(topic => topic.id === course.studiedThroughTopicId);
+  const studied = index < 0 ? 0 : topics.slice(0, index + 1).reduce((sum, topic) => sum + count(topic), 0);
+  return { studied, total, percent: total ? Math.round(studied / total * 100) : 0, confirmed: index >= 0 };
 }
 export function todaySuggestions(state: LearningState, date: string) {
   const used = state.records.filter(r => r.date === date && r.action !== "preview").reduce((n, r) => n + r.minutes, 0);
@@ -34,4 +45,8 @@ export function courseworkTasks(state: LearningState) {
     const seen = new Set<string>();
     return course.topics.flatMap(topic => topic.resources.filter(r => r.kind === "assign" && !seen.has(r.id) && Boolean(seen.add(r.id))).map(resource => ({ course, topic, resource })));
   }).sort((a,b) => (a.resource.coursework?.dueAt || "9999").localeCompare(b.resource.coursework?.dueAt || "9999"));
+}
+export function courseworkComplete(resource: LearningResource) {
+  const detail = resource.coursework;
+  return Boolean(resource.confirmedAt || (!resource.missing && !detail?.error && (detail?.status === "submitted" || (detail?.status === "unknown" && /^(released|已发布)$/i.test(detail.grading.trim()) && Boolean(detail.grade.trim())))));
 }

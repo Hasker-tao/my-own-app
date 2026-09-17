@@ -21,7 +21,7 @@ describe("application health", () => {
         buildId: "development",
         status: "ok",
         database: "ok",
-        schemaVersion: "003_learning.sql",
+        schemaVersion: "004_fitness_simple_plans.sql",
       });
     } finally {
       await app.close();
